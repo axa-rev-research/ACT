@@ -1,0 +1,29 @@
+name: act
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  # scientific / compiled stack via conda
+  - numpy
+  - pandas
+  - matplotlib
+  - networkx
+  - jupyterlab
+  - httpx
+  - python-dotenv
+  - tqdm
+
+  # graph drawing stack
+  - graphviz
+  - pygraphviz
+  - pydot
+
+  # let conda solve first, then pip-only / fast-moving packages
+  - pip
+  - pip:
+      - openai
+      - tiktoken
+      - diskcache
+      - tenacity
+      - litellm
+      - datasets

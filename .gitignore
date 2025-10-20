@@ -1,0 +1,14 @@
+# Project specific files and directories to not push to git
+.env
+demo_notebook/logs
+logs/
+src/__pycache__
+
+
+# conda/mamba caches & envs
+*.conda
+*.tar.bz2
+.conda-env/
+.env/
+.venv/
+**/.ipynb_checkpoints/
