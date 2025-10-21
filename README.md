@@ -67,8 +67,8 @@ See below for instructions on how to correctly set up the environment and notebo
 ### 1. Clone repository and create conda environment
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/ACT_demo.git #TODO: Add axa github
-cd ACT_demo
+git clone https://github.com/axa-rev-research/ACT
+cd ACT
 
 # Activate conda env
 conda env create -f environment.yml
@@ -206,7 +206,7 @@ ACT-tree/
 ├── textgrad/                 # TextGrad submodule/dependency
 │
 ├── environment.yml           # Conda env file
-├── .env.example              # Add your environment variables (e.g. API keys) here
+├── .env                      # Add your environment variables (e.g. API keys) here
 └── README.md                 # This file
 ```
 
