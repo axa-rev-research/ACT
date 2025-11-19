@@ -7,6 +7,7 @@ Provides a clean, sklearn-like interface for the ACT framework.
 
 Usage:
     from helper_demo import load_dataset, train_model, evaluate_model, plot_tree
+    or import src.demo_helper as hd
 """
 
 import sys
@@ -33,15 +34,14 @@ def setup_engine(model_string, api_key=None, **engine_kwargs):
     
     Args:
         model_string: Model identifier following TextGrad conventions:
-            - OpenAI: "gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"
+            - OpenAI: "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano"
             - Azure: "azure-<deployment-name>" (requires AZURE_* env vars)
-            - Claude: "claude-3-5-sonnet-20240620", "opus", "haiku"
             - Ollama: "ollama-gemma3:4b", "ollama-llama3"
+            - vLLM: "openai-<model-name>
             - Other: See TextGrad documentation
         api_key: API key for the service. If None, reads from environment.
                  For OpenAI: sets OPENAI_API_KEY
                  For Azure: sets AZURE_API_KEY and AZURE_OPENAI_API_KEY
-                 For Anthropic: sets ANTHROPIC_API_KEY
         **engine_kwargs: Additional arguments to pass to tg.get_engine()
     
     Returns:
@@ -53,9 +53,6 @@ def setup_engine(model_string, api_key=None, **engine_kwargs):
         
         # Azure (requires env vars: AZURE_OPENAI_ENDPOINT, OPENAI_API_VERSION, OPENAI_MODEL_NAME)
         engine = setup_engine("azure-gpt-4o")
-        
-        # Claude
-        engine = setup_engine("claude-3-5-sonnet-20240620", api_key="sk-ant-...")
         
         # Ollama (local)
         engine = setup_engine("ollama-gemma3:4b")

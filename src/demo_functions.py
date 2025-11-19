@@ -7,7 +7,13 @@ structure, splitting logic, and recursive training procedure.
 
 This module is imported by demo_helper.py and is not meant to be run directly.
 
-Code has 6 Parts, Ctrl + F and Part 3 will lead you to the start of Part 3
+Code has 6 Parts:
+- General helper functions
+- Evaluation functions to compute accuracy
+- Core model classes (CARTNode and CARTAgent)
+- Loss & feedback functions to train ACT (LLM-driven)
+- Training/optimization loop
+- ACT tree visualization
 """
 
 import re
