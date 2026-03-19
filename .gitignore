@@ -4,6 +4,9 @@ demo_notebook/logs
 logs/
 src/__pycache__/
 textgrad/__pycache__/
+act_output/
+README_demo.md
+.DS_Store
 
 
 # conda/mamba caches & envs
@@ -12,4 +15,4 @@ textgrad/__pycache__/
 .conda-env/
 .env/
 .venv/
-**/.ipynb_checkpoints/
+**/.ipynb_checkpoints/.DS_Store

@@ -48,23 +48,39 @@ class ChatOpenAI(EngineLM, CachedEngine):
         self.system_prompt = system_prompt
         self.base_url = base_url
         
-        if not base_url:
-            if os.getenv("OPENAI_API_KEY") is None:
-                raise ValueError("Please set the OPENAI_API_KEY environment variable if you'd like to use OpenAI models.")
+        # if not base_url:
+        #     if os.getenv("OPENAI_API_KEY") is None:
+        #         raise ValueError("Please set the OPENAI_API_KEY environment variable if you'd like to use OpenAI models.")
             
-            self.client = OpenAI(
-                api_key=os.getenv("OPENAI_API_KEY")
-            )
-        elif base_url and base_url == OLLAMA_BASE_URL:
+        #     self.client = OpenAI(
+        #         api_key=os.getenv("OPENAI_API_KEY")
+        #     )
+        # elif base_url and base_url == OLLAMA_BASE_URL:
+        #     self.client = OpenAI(
+        #         base_url=base_url,
+        #         api_key="ollama"
+        #     )
+        # else:
+        #     raise ValueError("Invalid base URL provided. Please use the default OLLAMA base URL or None.")
+
+        if base_url:
+            # Accept any OpenAI-compatible server (vLLM, Ollama, etc.)
             self.client = OpenAI(
                 base_url=base_url,
-                api_key="ollama"
-            )
+                api_key=os.getenv("OPENAI_API_KEY", "dummy")
+                )
         else:
-            raise ValueError("Invalid base URL provided. Please use the default OLLAMA base URL or None.")
+            if os.getenv("OPENAI_API_KEY") is None:
+                raise ValueError("Please set OPENAI_API_KEY or pass a base_url for an OpenAI-compatible server.")
+                self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
         self.model_string = model_string
         self.is_multimodal = is_multimodal
+        
+        # Attributes for token counts
+        self.total_tokens = 0
+        self.prompt_tokens = 0
+        self.completion_tokens = 0
 
     @retry(wait=wait_random_exponential(min=1, max=5), stop=stop_after_attempt(5))
     def generate(self, content: Union[str, List[Union[str, bytes]]], system_prompt: str=None, **kwargs):
@@ -73,8 +89,8 @@ class ChatOpenAI(EngineLM, CachedEngine):
         
         elif isinstance(content, list):
             has_multimodal_input = any(isinstance(item, bytes) for item in content)
-            #if (has_multimodal_input) and (not self.is_multimodal):
-            #    raise NotImplementedError("Multimodal generation is only supported for Claude-3 and beyond.")
+            if (has_multimodal_input) and (not self.is_multimodal):
+               raise NotImplementedError("Multimodal generation is only supported for Claude-3 and beyond.")
             
             return self._generate_from_multiple_input(content, system_prompt=system_prompt, **kwargs)
 
@@ -103,12 +119,19 @@ class ChatOpenAI(EngineLM, CachedEngine):
             #think=False  # Disable thinking
         )
 
+        # Track token usage
+        if hasattr(response, 'usage') and response.usage:
+            self.prompt_tokens += response.usage.prompt_tokens
+            self.completion_tokens += response.usage.completion_tokens
+            self.total_tokens += response.usage.total_tokens
+
         response = response.choices[0].message.content
 
-        # Check if "deepseek" exists in self.model_string
-        #if "deepseek" in self.model_string.lower():
-        #    # Ensure response is a string before modifying it
-        #    response = re.sub(r"<think>.*?</think>", "", response, flags=re.DOTALL).strip()
+        if response is None: # Added for debugging
+            print(f"[ERROR] Model returned None response")
+            print(f"[ERROR] Prompt length: {len(prompt)} chars")
+            print(f"[ERROR] First 500 chars: {prompt[:500]}")
+            print(f"[ERROR] System prompt: {system_prompt[:200] if system_prompt else 'None'}")
         
         self._save_cache(sys_prompt_arg + prompt, response)
         return response
@@ -162,7 +185,10 @@ class ChatOpenAI(EngineLM, CachedEngine):
             top_p=top_p,
         )
 
-        print("hi 2")
+        if hasattr(response, 'usage') and response.usage:
+            self.prompt_tokens += response.usage.prompt_tokens
+            self.completion_tokens += response.usage.completion_tokens
+            self.total_tokens += response.usage.total_tokens
 
         response_text = response.choices[0].message.content
         self._save_cache(cache_key, response_text)

@@ -54,6 +54,7 @@ class BackwardContext:
         self.kwargs = kwargs
 
     def __call__(self, backward_engine: EngineLM):
+        # print(f"[DEBUG] backward_engine: {backward_engine}")
         return self.backward_fn(*self.args, **self.kwargs, backward_engine=backward_engine)
 
     def __repr__(self):

@@ -48,6 +48,7 @@ class BlackboxLLM(Module):
         :return: The output variable.
         :rtype: Variable
         """     
+        # print(f"[DEBUG] Prompt to model forward call: {x}")
         return self.llm_call(x)
 
 

@@ -25,11 +25,9 @@ class JAILBREAK_Classification(Dataset):
         if split == "test":
             self.data = load_dataset("jackhhao/jailbreak-classification", split="test", cache_dir=root)
             self.data = self.data.filter(lambda x: len(x["prompt"]) <= MAX_Q_LEN)
-            print(f"[INFO] To keep context length for the LLM reasonable, samples longer than {MAX_Q_LEN} characters are filtered out.")
         else:
             hf_train = load_dataset("jackhhao/jailbreak-classification", split="train", cache_dir=root)
             hf_train = hf_train.filter(lambda x: len(x["prompt"]) <= MAX_Q_LEN)
-            print(f"[INFO] To keep context length for the LLM reasonable, samples longer than {MAX_Q_LEN} characters are filtered out.")
 
             # Build a validation split from the HF train
             n = len(hf_train)
@@ -58,7 +56,7 @@ class JAILBREAK_Classification(Dataset):
         label_str = row["answer"]
         label = self._map_label(label_str)
         # Keep the question format consistent with your pipeline
-        question_prompt = f"Prompt: {text}"
+        question_prompt = f"Text: {text}"
         return question_prompt, label
 
     def __len__(self):
@@ -74,7 +72,7 @@ class JAILBREAK_Classification(Dataset):
 
 
 class JAILBREAK_Classification_DSPy(JAILBREAK_Classification):
-    def __init__(self, root: str = None, split: str = "train", val_size=0.1):
+    def __init__(self, root: str = None, split: str = "train", seed: int= 42, val_size=0.1):
         """
         DSPy-friendly splits for the Jailbreak-Classification dataset.
         Produces dicts with keys: question, answer (int in {0,1}).
@@ -95,7 +93,7 @@ class JAILBREAK_Classification_DSPy(JAILBREAK_Classification):
             for ex in hf_split:
                 ans = 1 if ex["type"].strip().lower() == "jailbreak" else 0
                 official.append(dict(question=ex["prompt"], answer=ans))
-            rng = random.Random(0)
+            rng = random.Random(seed)
             rng.shuffle(official)
             self.data = official
         else:
@@ -119,7 +117,7 @@ class JAILBREAK_Classification_DSPy(JAILBREAK_Classification):
             val_part = to_records(hf_train.select(range(k)))
 
             import random
-            rng = random.Random(0)
+            rng = random.Random(seed)
             rng.shuffle(train_part)
             rng.shuffle(val_part)
 
@@ -127,7 +125,7 @@ class JAILBREAK_Classification_DSPy(JAILBREAK_Classification):
 
 
 class JAILBREAK_Classification_DSPy_Balanced(JAILBREAK_Classification):
-    def __init__(self, root: str = None, split: str = "train", n_per_class: int = 300):
+    def __init__(self, root: str = None, split: str = "train", seed: int = 42, n_per_class: int = 300):
         """
         Balanced DSPy variant:
         - For each split, sample n_per_class 'jailbreak' and n_per_class 'benign' examples (if available).
@@ -161,7 +159,7 @@ class JAILBREAK_Classification_DSPy_Balanced(JAILBREAK_Classification):
                 neg.append(rec)
 
         # Determine split for train/val on the fly from train
-        rng = random.Random(42)
+        rng = random.Random(seed)
         rng.shuffle(pos)
         rng.shuffle(neg)
 

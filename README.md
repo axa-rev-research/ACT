@@ -1,15 +1,12 @@
 # ACT: Agentic Classification Tree <img src="assets/act_logo.png" alt="ACT Logo" width="80" align="right"/>
 
 ![ACT Example](assets/act_example.png)
-**Example ACT decision tree for tuberculosis diagnosis using unstructured, free-text patient descriptions.** _A tree is automatically learned, with each node containing a binary natural language question, autonomously discovered via recursive prompt refinement to maximize label separation at each split. At inference, these questions are answered by a large language model (LLM) from the root node to the leaves of the tree. The final classification (TB or Not TB) corresponds to the majority label of training examples described by each leaf._
+**Example ACT decision tree for tuberculosis (TB) diagnosis using unstructured, free-text patient descriptions.** _A tree is automatically learned, with each node containing a binary natural language question, autonomously discovered via recursive prompt refinement to maximize label separation at each split. At inference, these questions are answered by a large language model (LLM) from the root node to the leaves of the tree. The final classification (TB or Not TB) corresponds to the majority label of training examples described by each leaf._
 
 <!--- BADGES: START --->
 [![Paper](https://img.shields.io/badge/arXiv-2509.26433-B31B1B.svg)](https://arxiv.org/abs/2509.26433)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 <!--- BADGES: END --->
-
-⚠️ ***Demo Release**: This repository provides a lightweight demonstration of ACT.
-A full-featured version with all experiments and utilities is under preparation for open release.
 
 ## Interpretable Agentic LLM-Based Decision Trees for Unstructured Data
 
@@ -23,14 +20,12 @@ ACT (Agentic Classification Tree) extends traditional decision tree methodology 
 - 🚀 **Effective**: Matches or exceeds CoT, DSPy, and TextGrad baselines across benchmarks
 
 ### Example: Tuberculosis Diagnosis
-
-**Unstructured Data Input:**
 ```
 Patient 1: "My main symptom is a runny nose with increased sweating, pain, fever,
 skin rashes, nasal congestion, sore throat, muscle pain, loss of appetite, and chills."
 → Classification: Not TB
 
-Patient 2: "I am coughing blood with pain, skin lesions, nasal congestion, extreme 
+Patient 2: "I am coughing blood with pain, skin lesions, nasal congestion, extreme
 fatigue, diffuse muscle pain, loss of appetite, chills, and pink rash on my neck."
 → Classification: TB
 ```
@@ -43,172 +38,269 @@ The ACT model iteratively learns questions like these for each node:
 
 ## Demo Notebooks
 
-We provide for each dataset used in the paper a comprehensive Jupyter notebook for interactive exploration:
-```bash
-notebooks/act_demo_diagno.ipynb # In Jupyter, select the 'act' kernel (Kernel → Change kernel)
-notebooks/act_demo_jailbreak.ipynb # In Jupyter, select the 'act' kernel (Kernel → Change kernel)
-notebooks/act_demo_spam.ipynb # In Jupyter, select the 'act' kernel (Kernel → Change kernel)
+Interactive Jupyter notebooks are provided for each dataset used in the paper:
+```
+notebooks/act_demo_diagno.ipynb      # Tuberculosis diagnosis
+notebooks/act_demo_spam.ipynb        # Spam detection
+notebooks/act_demo_jailbreak.ipynb   # Jailbreak prompt detection
 ```
 
-The notebook includes:
-- ✅ Step-by-step tutorial with explanations
-- ✅ Sample data exploration
-- ✅ Model training with different hyperparameters
-- ✅ Evaluation and metrics
-- ✅ Tree visualization
-
-See below for instructions on how to correctly set up the environment and notebook kernel.
-
----
-
-
-## Setup
-
-### 1. Clone repository and create conda environment
-```bash
-# Clone the repository
-git clone https://github.com/axa-rev-research/ACT
-cd ACT
-
-# Activate conda env
-conda env create -f environment.yml
-conda activate act
-
-# Make local 'src/' and 'textgrad/' imports work without packaging
-export PYTHONPATH="$PWD/src:$PWD/textgrad:$PYTHONPATH"
-```
-
-### 2. Setup API Credentials
-
-Create a `.env` file in the project root and add API keys based on your needs:
-```bash
-# For OpenAI
-OPENAI_API_KEY=your-api-key-here
-
-# OR for Azure OpenAI
-AZURE_OPENAI_ENDPOINT=https://your-endpoint.openai.azure.com/
-AZURE_OPENAI_API_KEY=your-azure-key
-OPENAI_API_VERSION=2024-02-15-preview
-OPENAI_MODEL_NAME=your-deployment-name
-PROVIDER=azure
-```
-
-### 3. Load and Prepare Data
-```python
-import textgrad as tg # Make sure to use the local textgrad version
-from textgrad.tasks import load_task
-
-# Setup engine
-llm_engine = tg.get_engine("gpt-4.1-mini")  # or "azure-your-deployment" or "vllm-your_model_name" or "ollama-your_model_name"
-tg.set_backward_engine(llm_engine, override=True)
-
-# Load dataset (e.g., tuberculosis diagnosis)
-train_set, val_set, test_set, eval_fn = load_task(
-    "DIAGNO",  # or "SPAM", "JAILBREAK"
-    evaluation_api=llm_engine
-)
-
-# Convert labels to yes/no format
-train_set = [(x, "yes" if y == 1 else "no") for x, y in train_set]
-test_set = [(x, "yes" if y == 1 else "no") for x, y in test_set]
-
-print(f"Train: {len(train_set)}, Test: {len(test_set)}")
-```
-
-### 4. Train ACT Model
-```python
-import src.helper_functions as fn
-
-# Initialize the model
-model = fn.CARTAgent(llm_engine, max_depth=3)
-
-# Extract data and labels
-train_data = [x for x, _ in train_set]
-train_labels = [y for _, y in train_set]
-
-# Train the tree
-model.fit(
-    train_data=train_data,
-    train_labels=train_labels,
-    llm_engine=llm_engine,
-    max_steps_per_node=10,      # Optimization steps per node
-    max_depth=3,                # Maximum tree depth
-    max_workers=16,             # Parallel threads
-    max_logical_ops=1,          # Max 'and'/'or' in questions
-    max_examples_per_group=50,  # Examples for feedback
-    keyword="characteristic",   # Focus keyword (task-specific)
-    data_type="a text"          # Data type description (task-specific)
-)
-
-```
-
-### 5. Evaluate Performance
-```python
-# Evaluate on test set
-test_acc = fn.eval_dataset(
-    test_set, 
-    eval_fn, 
-    model, 
-    max_workers=16,             # Parallel threads
-    keyword="characteristic",   # Focus keyword (task-specific), use same here if used during training
-    data_type="a text"          # Data type description (task-specific), use same here if used during training
-)
-
-print(f"Test Accuracy: {np.mean(test_acc):.2%}")
-```
-
-### 5. Visualize Decision Tree
-```python
-import numpy as np
-
-# Generate and save tree visualization
-fn.visualize_acart_tree(
-    root=model.root,
-    data=train_data,
-    labels=train_labels,
-    llm_engine=llm_engine,
-    max_workers=4,
-    keyword="characteristics",
-    data_type="a text",
-    save_path="mytask_tree.png"
-)
-```
-
-
-### Key Arguments
-
-| Argument | Description | Default |
-|----------|-------------|---------|
-| `--task` | Dataset name (DIAGNO3, SPAM, Jailbreak) | DIAGNO3 |
-| `--max_depth` | Maximum tree depth | 3 |
-| `--max_steps_per_node` | Optimization steps per node | 3 |
-| `--num_threads` | Parallel workers | 16 |
-| `--max_logical_ops` | Max 'and'/'or' operators in questions | 1 |
-| `--max_examples_per_group` | Number of examples shown per group at each refinement step | 50 |
-| `--keyword` | Task-specific focus keyword | "characteristic" |
-| `--data_type` | Description of input data type | "a text" |
-| `--min_gini` | Gini stopping criteria | 0.05 |
+Each notebook includes step-by-step data exploration, model training, evaluation, and tree visualization. See the [Setup](#setup) section below for environment and kernel instructions.
 
 ---
 
 ## Project Structure
 ```
-ACT-tree/
+ACT/
 │
-├── src/
+├── act_output/                  # Create this folder to store created tree (.pkl) and training metadata
+├── act_src/
+│   ├── act.py                # Main training and evaluation script
+│   ├── eval_act.py           # Evaluate a saved ACT model
+│   ├── vis_act.py            # Visualize a saved ACT model
 │   ├── functions.py          # Core ACT implementation
 │   ├── function_prompts.py   # Prompt templates
-│   └── helper_demo.py        # Helper functions for demos
+│   ├── demo_helper.py        # Functions needed for demo notebooks
+│   └── act_helper.py         # Helper functions
 │
-├── notebooks/
-│   └── act_demo_*.ipynb      # Interactive tutorial notebooks
-│
+├── notebooks/                # Contains demo notebooks
 ├── textgrad/                 # TextGrad submodule/dependency
+│   ├── tasks/                # Data loading handled here, add new datasets/tasks here
 │
-├── environment.yml           # Conda env file
-├── .env                      # Add your environment variables (e.g. API keys) here
-└── README.md                 # This file
+├── environment.yml           # Conda env for API-hosted models (e.g. Azure)
+├── vllm_env.yml              # Conda env for self-hosted models via vLLM
+├── .env                      # API credentials (create this yourself)
+└── README.md
 ```
+
+---
+
+## Setup
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/axa-rev-research/ACT
+cd ACT
+```
+
+### 2. Choose and Create the Right Conda Environment
+
+There are **two conda environments** depending on how you serve your LLM:
+
+| Environment | File | Use when |
+|---|---|---|
+| `act` | `environment.yml` | Using an API-hosted model (e.g. Azure OpenAI) |
+| `act_vllm` | `vllm_env.yml` | Self-hosting a model locally via vLLM |
+```bash
+# For API-hosted models (Azure, OpenAI):
+conda env create -f environment.yml
+conda activate act
+
+# For self-hosted models via vLLM:
+conda env create -f vllm_env.yml
+conda activate act_vllm
+```
+
+### 3. Set the Python Path
+
+This step is required when running `act.py` from the command line, so that the code uses the local textgrad version:
+```bash
+export PYTHONPATH="$PWD/act_src:$PWD/textgrad:$PYTHONPATH"
+```
+
+> **Note:** The demo notebooks handle path setup automatically via `demo_helper.py` — no manual `PYTHONPATH` export is needed when using notebooks.
+
+### 4. Register the Jupyter Kernel (for notebooks)
+
+To use the demo notebooks, register the conda environment as a Jupyter kernel:
+```bash
+conda activate act
+python -m ipykernel install --user --name act --display-name "ACT"
+```
+Then in Jupyter, select the **ACT** kernel (Kernel → Change kernel).
+
+### 5. Set Up API Credentials
+
+Create a `.env` file in the project root. The demo notebooks load this file automatically via `python-dotenv`.
+```bash
+# For Azure OpenAI
+AZURE_OPENAI_ENDPOINT=https://your-endpoint.openai.azure.com/
+AZURE_OPENAI_API_KEY=your-azure-key
+OPENAI_API_VERSION=2024-02-15-preview
+OPENAI_MODEL_NAME=your-deployment-name
+AZURE_API_BASE=${AZURE_OPENAI_ENDPOINT} # LiteLLM compatibility
+AZURE_API_VERSION=${OPENAI_API_VERSION} # LiteLLM compatibility
+AZURE_API_KEY=${AZURE_OPENAI_API_KEY} # LiteLLM compatibility
+
+# For OpenAI directly
+OPENAI_API_KEY=your-api-key-here
+
+# Huggingface (optional)
+HF_TOKEN=your-hf-token
+```
+
+If using vLLM, no `.env` credentials are needed — see the vLLM section below.
+
+---
+
+## Running ACT: Azure-Hosted Model
+
+Activate the standard environment and set the path:
+```bash
+conda activate act
+export PYTHONPATH="$PWD/act_src:$PWD/textgrad:$PYTHONPATH"
+mkdir -p act_output  # create the output directory if it doesn't exist
+```
+
+Run training with `act.py`:
+```bash
+python -u act_src/act.py \
+  --task DIAGNO \
+  --model azure-gpt-4.1-nano \
+  --max_depth 4 \
+  --max_steps_per_node 10 \
+  --num_threads 16 \
+  --out_dir ./act_output \
+  2>&1 | tee -a act_output/diagno_act_4_10_nano_1.out
+```
+
+---
+
+## Running ACT: Self-Hosted Model via vLLM
+
+Running with vLLM requires two separate processes: the **vLLM server** and the **ACT training script**. We recommend using `tmux` to manage both in the background, especially on a remote machine.
+
+### Step 1 — Start the vLLM Server
+
+Create a tmux session for the server:
+```bash
+conda activate act_vllm
+cd ACT
+tmux new -s vllm_server
+```
+
+Inside the tmux session, configure your environment and launch the server:
+```bash
+conda activate act_vllm
+cd ACT
+
+# Set Python path
+export PYTHONPATH="$PWD/act_src:$PWD/textgrad:$PYTHONPATH"
+
+# Optional but recommended: configure caches and disable torch compile
+export HF_HOME=~/.cache/huggingface
+export TOKENIZERS_PARALLELISM=false
+export VLLM_TORCH_COMPILE_BACKEND=none
+export TORCHDYNAMO_DISABLE=1
+
+# Select GPU (check yours with nvidia-smi)
+export CUDA_VISIBLE_DEVICES=0   # adjust to your target GPU index
+
+# Server address
+export HOST=0.0.0.0
+export PORT=8000
+
+# Create log directory and launch server
+mkdir -p logs
+python -u -m vllm.entrypoints.openai.api_server \
+  --model google/gemma-3-4b-it \
+  --host $HOST \
+  --port $PORT \
+  --dtype bfloat16 \
+  --tensor-parallel-size 1 \
+  --max-model-len 40960 \
+  --gpu-memory-utilization 0.92 \
+  --max-num-seqs 256 \
+  --max-num-batched-tokens 65536 \
+  --enforce-eager \
+  --trust-remote-code \
+  2>&1 | tee -a logs/vllm_server.out
+```
+
+Detach from the tmux session once the server is ready: **`Ctrl-b` then `d`**
+
+### Step 2 — Verify the Server is Running
+
+In a new shell, run a quick smoke test:
+```bash
+curl http://localhost:8000/v1/models
+```
+
+This returns the model ID you will need for the `--model` argument in Step 3.
+
+### Step 3 — Run ACT Against the vLLM Server
+
+Open a new tmux session for training:
+```bash
+tmux new -s acart
+conda activate act_vllm
+cd ACT
+
+export PYTHONPATH="$PWD/act_src:$PWD/textgrad:$PYTHONPATH"
+export OPENAI_BASE_URL=http://localhost:8000/v1
+export OPENAI_API_KEY=dummy_key   # required by the OpenAI client, but not validated by vLLM
+```
+
+Run training using the model ID returned by the smoke test (`MODEL_ID_FROM_CURL`):
+```bash
+python -u act_src/act.py \
+  --task SPAM \
+  --model openai-google/gemma-3-4b-it \
+  --max_depth 3 \
+  --max_steps_per_node 10 \
+  --num_threads 32 \
+  --out_dir ./act_output \
+  2>&1 | tee -a act_output/spam_act_3_10_gemma_1.out
+```
+
+Detach from the session once training starts: **`Ctrl-b` then `d`**
+
+---
+
+## Evaluating a Saved Model
+```bash
+python -u act_src/eval_act.py \
+  --model_path ./act_output/DIAGNO_FULL_azure_gpt_4_1_nano_depth4_steps10_acc0.8500.pkl \
+  --num_threads 16
+```
+
+Add `--do_full_test_set` to additionally evaluate on the full (unbalanced) test set if available.
+
+---
+
+## Visualizing a Saved Model
+```bash
+python -u act_src/vis_act.py \
+  --model_path ./act_output/DIAGNO_FULL_azure_gpt_4_1_nano_depth4_steps10_acc0.8500.pkl
+```
+
+The visualization is saved as a `.png` in the same directory as the model file.
+
+---
+
+## Key Arguments
+
+| Argument | Description | Default |
+|---|---|---|
+| `--task` | Dataset name (`DIAGNO3`, `DIAGNO_FULL`, `SPAM`, `SPAM_FULL_DATASET`, `JAILBREAK`, `BANKCHURN`, `BANKCHURN_IMBALANCED`, `BANKCHURN_FULL`, `IMDBBALANCED`, `IMDBFULL`) | `DIAGNO3` |
+| `--model` | Model string (e.g. `azure-gpt-4.1-nano`, `openai-google/gemma-3-4b-it`) | `azure-gpt-4.1-nano` |
+| `--max_depth` | Maximum tree depth | `3` |
+| `--max_steps_per_node` | Optimization steps per node | `3` |
+| `--num_threads` | Parallel workers | `16` |
+| `--max_logical_ops` | Max `and`/`or` operators in questions | `2` |
+| `--max_examples_per_group` | Examples shown per group at each refinement step | `50` |
+| `--keyword` | Task-specific focus keyword | `characteristic` |
+| `--data_type` | Description of input data type | `a text` |
+| `--min_gini` | Gini stopping threshold | `0.01` |
+| `--stop_min_samples` | Min samples required to continue splitting a node | `10` |
+| `--train_pct` | Percentage of training set to use (1–100) | `100.0` |
+| `--optimization_constraints` | Constraint mode (`basic`, `exploring`, `exploiting`) | `exploring` |
+| `--do_two_stage_training` | Enable exploring → exploiting stage switch | off |
+| `--eval_full_test_set` | Also evaluate on full unbalanced test set | off |
+| `--out_dir` | Output directory for logs, weights, and visualizations | `./act_output` |
+| `--checkpoint_dir` | Directory to save training checkpoints | `act_train_chckpts` |
+| `--no_save_model` | Disable saving the final `.pkl` model | off |
+| `--do_vis` | Generate tree visualization after training | off |
 
 ---
 
@@ -226,11 +318,11 @@ ACT uses **TextGrad** to iteratively refine questions by:
 
 ### 3. Tree Construction
 The tree is built **recursively** from root:
-- Start with a generic question at each node
+- Start with a generic seed question at each node
 - Optimize the question through multiple refinement steps
-- Split data based on LLM responses
+- Split data based on LLM yes/no responses
 - Recursively build left and right subtrees
-- Stop when perfect purity is achieved, min gini or depth limit is reached
+- Stop when purity is sufficient, Gini threshold is met, or depth limit is reached
 
 ### 4. Prediction
 At inference time:
@@ -245,13 +337,13 @@ At inference time:
 ## Contact
 
 For questions or issues, please:
-- Open an issue on GitHub or
+- Open an issue on GitHub, or
 - Contact the authors: vincent.grari@axa.com, tim.arni@epfl.ch
 
 ---
 
 ## Related Projects
 
-- [TextGrad](https://github.com/zou-group/TextGrad) - Automatic differentiation via text
-- [DSPy](https://github.com/stanfordnlp/dspy) - Programming with language models
-- [scikit-learn Decision Trees](https://scikit-learn.org/stable/modules/tree.html) - Traditional decision trees for tabular data
+- [TextGrad](https://github.com/zou-group/textgrad) — Automatic differentiation via text
+- [DSPy](https://github.com/stanfordnlp/dspy) — Programming with language models
+- [scikit-learn Decision Trees](https://scikit-learn.org/stable/modules/tree.html) — Traditional decision trees for tabular data

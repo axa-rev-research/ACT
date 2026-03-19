@@ -172,6 +172,7 @@ class Variable:
         # TODO: we should somehow ensure that we do not have cases such as the predecessors of a variable requiring a gradient, but the variable itself not requiring a gradient
 
         self.gradients = set()
+        # print(f"[DEBUG] topo: {topo}")
         for v in reversed(topo):
             if v.requires_grad:
                 v.gradients = _check_and_reduce_gradients(v, backward_engine)

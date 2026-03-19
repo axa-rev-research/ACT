@@ -92,6 +92,8 @@ class LLMCall(Function):
         :return: None
         """
         children_variables = response.predecessors
+        # print(f"[DEBUG] children_variables = {children_variables}")
+        # print(f"[DEBUG] response: {response}")
         if response.get_gradient_text() == "":
             self._backward_through_llm_base(children_variables, response, prompt, system_prompt, backward_engine)
         else:
@@ -148,7 +150,7 @@ class LLMCall(Function):
             logger.info(f"_backward_through_llm prompt", extra={"_backward_through_llm": backward_prompt})
             gradient_value = backward_engine(backward_prompt, system_prompt=BACKWARD_SYSTEM_PROMPT)
             logger.info(f"_backward_through_llm gradient", extra={"_backward_through_llm": gradient_value})
-            
+            # print(f"[DEBUG] gradient_value: {gradient_value}")
             var_gradients = Variable(value=gradient_value, role_description=f"feedback to {variable.get_role_description()}")
             variable.gradients.add(var_gradients)
             conversation = CONVERSATION_TEMPLATE.format(**backward_info)

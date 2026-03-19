@@ -1,0 +1,38 @@
+name: act_vllm
+channels:
+  - conda-forge
+dependencies:
+  - _libgcc_mutex=0.1=conda_forge
+  - libgomp=15.2.0=he0feb66_16
+  - ca-certificates=2026.1.4=hbd8a1cb_0
+  - ld_impl_linux-64=2.45=bootstrap_ha15bf96_5
+  - tzdata=2025c=hc9c84f9_1
+  - _openmp_mutex=4.5=7_kmp_llvm
+  - libgcc=15.2.0=he0feb66_16
+  - bzip2=1.0.8=hda65f42_8
+  - libexpat=2.7.3=hecca717_0
+  - libffi=3.5.2=h3435931_0
+  - libgcc-ng=15.2.0=h69a702a_16
+  - liblzma=5.8.2=hb03c661_0
+  - libnsl=2.0.1=hb9d3cd8_1
+  - libstdcxx=15.2.0=h934c35e_16
+  - libuuid=2.41.3=h5347b49_0
+  - ncurses=6.5=h2d0b736_3
+  - openssl=3.6.0=h26f9b46_0
+  - icu=78.2=h33c6efd_0
+  - liblzma-devel=5.8.2=hb03c661_0
+  - libxcrypt=4.4.36=hd590300_1
+  - libzlib=1.2.13=h4ab18f5_6
+  - readline=8.3=h853b02a_0
+  - xz-gpl-tools=5.8.2=ha02ee65_0
+  - xz-tools=5.8.2=hb03c661_0
+  - libsqlite=3.46.0=hde9e2c9_0
+  - llvm-openmp=15.0.7=h0cdce71_0
+  - tk=8.6.13=noxft_h4845f30_101
+  - xz=5.8.2=ha02ee65_0
+  - python=3.11.9=hb806964_0_cpython
+  - certifi=2026.1.4=pyhd8ed1ab_0
+  - packaging=26.0=pyhcf101f3_0
+  - setuptools=80.10.1=pyh332efcf_0
+  - wheel=0.46.3=pyhd8ed1ab_0
+  - pip=25.3=pyh8b19718_0

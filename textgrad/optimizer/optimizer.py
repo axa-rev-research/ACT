@@ -5,6 +5,7 @@ from textgrad.variable import Variable
 from textgrad import logger
 from textgrad.engine import EngineLM
 import re
+import tiktoken
 from textgrad.config import validate_engine_or_get_default
 from .optimizer_prompts import construct_tgd_prompt, OPTIMIZER_SYSTEM_PROMPT, GRADIENT_TEMPLATE, GRADIENT_MULTIPART_TEMPLATE
 
@@ -173,12 +174,22 @@ class TextualGradientDescent(Optimizer):
             attempts = 0
             formatted_prompt = self._update_prompt(parameter)  # Generate initial prompt
             
+            def count_tokens(text, model_name="gpt-4"):
+                """Count tokens using tiktoken with a safe fallback."""
+                try:
+                    enc = tiktoken.encoding_for_model(model_name)
+                except Exception:
+                    enc = tiktoken.get_encoding("cl100k_base")
+                return len(enc.encode(str(text)))
+
+            print(f"[INFO] Prompt for optimizer has {count_tokens(formatted_prompt)} tokens")
             while attempts < MAX_ATTEMPTS:
                 new_text = self.engine(formatted_prompt, system_prompt=self.optimizer_system_prompt)
     
                 # Try extracting the value
                 try:
                     new_value = new_text.split(self.new_variable_tags[0])[1].split(self.new_variable_tags[1])[0].strip()
+
                     parameter.set_value(new_value)
                     logger.info(f"TextualGradientDescent updated text", extra={"parameter.value": parameter.value})
     

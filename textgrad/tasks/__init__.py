@@ -1,7 +1,12 @@
 from .mmlu import MMLU, MMLUInstanceDataset
 from .base import Dataset, DataLoader
 from .leetcode import LeetCodeHardEval
+from .fruitveg import FRUITVEG, FRUITVEG_DSPy
 from .jailbreak import JAILBREAK_Classification, JAILBREAK_Classification_DSPy, JAILBREAK_Classification_DSPy_Balanced
+from .imdb import IMDB_Classification, IMDB_Classification_DSPy, IMDB_Classification_DSPy_Balanced, IMDB_Classification_DSPy_Balanced_FullTest
+from .diagno import DIAGNO_DSPy3, DIAGNO_DSPy3_FullTest, DIAGNO_FULL
+from .spam import SPAM, SPAM_DSPy3, SPAM_DSPy3_FullTest, SPAM_FULL_DATASET
+from .bankchurn import BANKCHURN, BANKCHURN_DSPy, BANKCHURN_DSPy_FullTest, BANKCHURN_DSPy_Imbalanced, BANKCHURN_DSPy_Full
 
 from typing import Tuple, Callable
 from textgrad import Variable
@@ -12,10 +17,17 @@ AVAILABLE_DATASETS = [
     "BBH_object_counting",
     "BBH_word_sorting",
     "GSM8K_DSPy",
-    "DIAGNO",
+    "DIAGNO3",
+    "DIAGNO_FULL",
     "SPAM",
+    "SPAM_FULL_DATASET",
     "FRUITVEG",
-    "JAILBREAK"
+    "JAILBREAK",
+    "BANKCHURN",
+    "BANKCHURN_IMBALANCED",
+    "BANKCHURN_FULL",
+    "IMDBFULL",
+    "IMDBBALANCED"
 ]
 
 AVAILABLE_INSTANCE_DATASETS = [
@@ -23,11 +35,18 @@ AVAILABLE_INSTANCE_DATASETS = [
     "MMLU_college_physics",
     "GPQA_diamond"
     "LeetCodeHardEval",
-    "DIAGNO",
-    "SPAM"
+    "DIAGNO3",
+    "DIAGNO_FULL",
+    "SPAM",
+    "SPAM_FULL_DATASET",
+    "BANKCHURN",
+    "BANKCHURN_IMBALANCED",
+    "BANKCHURN_FULL",
+    "IMDBFULL",
+    "IMDBBALANCED"
 ]
 
-def load_task(task_name: str, evaluation_api: EngineLM, *args, **kwargs) -> Tuple[Dataset, Dataset, Callable]:
+def load_task(task_name: str, evaluation_api: EngineLM, seed: int=42, *args, **kwargs) -> Tuple[Dataset, Dataset, Callable]:
     """
     Args:
         task_name: the name of the task to evaluate
@@ -46,6 +65,7 @@ def load_task(task_name: str, evaluation_api: EngineLM, *args, **kwargs) -> Tupl
             "Ground truth answer",
             "Reasoning and prediction from the language model"
         ]
+        print("c est bien ici.....")
         fn_purpose = "The runtime of string-based function that checks if the prediction is correct."
         eval_fn = StringBasedFunction(string_based_equality_fn, function_purpose=fn_purpose)
         return train_set, val_set, test_set, eval_fn
@@ -92,56 +112,19 @@ def load_task(task_name: str, evaluation_api: EngineLM, *args, **kwargs) -> Tupl
         fn_purpose = "The runtime of string-based function that checks if the prediction is correct."
         eval_fn = StringBasedFunction(string_based_equality_fn, function_purpose=fn_purpose)
         return train_set, val_set, test_set, eval_fn
-    
-    elif task_name == "GSM8K_DSPy":
-        from textgrad.tasks.gsm8k import GSM8K_DSPy
-        from .big_bench_hard import string_based_equality_fn
-        from textgrad.autograd.string_based_ops import StringBasedFunction
-        evaluation_instruction = "Below is a prediction we got for a question answering task, and the correct final answer. Is the final answer correct? Say only 1 (yes) or 0 (no). Return 1 if and only if the final answer is correct. Return your response within <ACCURACY> </ACCURACY> tags. e.g.<ACCURACY> 0 </ACCURACY> or <ACCURACY> 1 </ACCURACY>"
-        system_prompt = Variable("You are a language model that evaluates the accuracy of a prediction for a mathematical question answering task. Only call a prediction accurate if it is the same as the ground truth answer.", requires_grad=False, role_description="system prompt for the evaluation")
-        # Should we do train/test like this?
-        train_set = GSM8K_DSPy(split="train", *args, **kwargs)
-        val_set = GSM8K_DSPy(split="val", *args, **kwargs)
-        test_set = GSM8K_DSPy(split="test", *args, **kwargs)
-        role_descriptions = [
-            "Question for the task",
-            "Ground truth answer",
-            "Prediction from the language model"
-        ]
-        fn_purpose = "The runtime of string-based function that checks if the prediction is correct."
-        eval_fn = StringBasedFunction(string_based_equality_fn, function_purpose=fn_purpose)
-        return train_set, val_set, test_set, eval_fn
-    
-    elif task_name == "GSM8K_DSPy":
-        from textgrad.tasks.gsm8k import GSM8K_DSPy
-        from .big_bench_hard import string_based_equality_fn
-        from textgrad.autograd.string_based_ops import StringBasedFunction
-        evaluation_instruction = "Below is a prediction we got for a question answering task, and the correct final answer. Is the final answer correct? Say only 1 (yes) or 0 (no). Return 1 if and only if the final answer is correct. Return your response within <ACCURACY> </ACCURACY> tags. e.g.<ACCURACY> 0 </ACCURACY> or <ACCURACY> 1 </ACCURACY>"
-        system_prompt = Variable("You are a language model that evaluates the accuracy of a prediction for a mathematical question answering task. Only call a prediction accurate if it is the same as the ground truth answer.", requires_grad=False, role_description="system prompt for the evaluation")
-        # Should we do train/test like this?
-        train_set = GSM8K_DSPy(split="train", *args, **kwargs)
-        val_set = GSM8K_DSPy(split="val", *args, **kwargs)
-        test_set = GSM8K_DSPy(split="test", *args, **kwargs)
-        role_descriptions = [
-            "Question for the task",
-            "Ground truth answer",
-            "Prediction from the language model"
-        ]
-        fn_purpose = "The runtime of string-based function that checks if the prediction is correct."
-        eval_fn = StringBasedFunction(string_based_equality_fn, function_purpose=fn_purpose)
-        return train_set, val_set, test_set, eval_fn
 
-    elif task_name == "DIAGNO":
-        from textgrad.tasks.diagno import DIAGNO,DIAGNO_DSPy,DIAGNO_DSPy2,DIAGNO_DSPy3
+    elif task_name == "DIAGNO3":
+        from textgrad.tasks.diagno import DIAGNO_DSPy3, DIAGNO_DSPy3_FullTest
         from .big_bench_hard import string_based_equality_fn
         from textgrad.autograd.string_based_ops import StringBasedFunction
-        evaluation_instruction = "Below is a prediction we got for a question answering task, and the correct final answer. Is the final answer correct? Say only 1 (yes) or 0 (no). Return 1 if and only if the final answer is correct. Return your response within <ACCURACY> </ACCURACY> tags. e.g.<ACCURACY> 0 </ACCURACY> or <ACCURACY> 1 </ACCURACY>"
-
-        #dataset = load_dataset("ninaa510/diagnosis-text")
-        # Should we do train/test like this?
-        train_set = DIAGNO_DSPy3(split="train", *args, **kwargs)
-        val_set = DIAGNO_DSPy3(split="val", *args, **kwargs)
-        test_set = DIAGNO_DSPy3(split="test", *args, **kwargs)
+        
+        train_set = DIAGNO_DSPy3(split="train", seed=seed, *args, **kwargs)
+        val_set = DIAGNO_DSPy3(split="val", seed=seed, *args, **kwargs)
+        test_set = DIAGNO_DSPy3(split="test", seed=seed, *args, **kwargs)
+        
+        # Also create the FULL test set
+        full_test_set = DIAGNO_DSPy3_FullTest(split="test", seed=seed, *args, **kwargs)
+        
         role_descriptions = [
             "Question for the task",
             "Ground truth answer",
@@ -149,19 +132,36 @@ def load_task(task_name: str, evaluation_api: EngineLM, *args, **kwargs) -> Tupl
         ]
         fn_purpose = "The runtime of string-based function that checks if the prediction is correct."
         eval_fn = StringBasedFunction(string_based_equality_fn, function_purpose=fn_purpose)
+        
+        # Return 4 items instead of 3: train, val, test_balanced, test_full
+        return train_set, val_set, test_set, full_test_set, eval_fn
+
+    elif task_name == "DIAGNO_FULL":
+        from textgrad.tasks.diagno import DIAGNO_FULL
+        from .big_bench_hard import string_based_equality_fn
+        from textgrad.autograd.string_based_ops import StringBasedFunction
+
+        train_set = DIAGNO_FULL(split="train", seed=seed, *args, **kwargs)
+        val_set   = DIAGNO_FULL(split="val",   seed=seed, *args, **kwargs)
+        test_set  = DIAGNO_FULL(split="test",  seed=seed, *args, **kwargs)
+
+        fn_purpose = "The runtime of string-based function that checks if the prediction is correct."
+        eval_fn = StringBasedFunction(string_based_equality_fn, function_purpose=fn_purpose)
+
         return train_set, val_set, test_set, eval_fn
         
     elif task_name == "SPAM":
-        from textgrad.tasks.spam import SPAM,SPAM_DSPy,SPAM_DSPy2,SPAM_DSPy3
+        from textgrad.tasks.spam import SPAM_DSPy3, SPAM_DSPy3_FullTest
         from .big_bench_hard import string_based_equality_fn
         from textgrad.autograd.string_based_ops import StringBasedFunction
-        evaluation_instruction = "Below is a prediction we got for a question answering task, and the correct final answer. Is the final answer correct? Say only 1 (yes) or 0 (no). Return 1 if and only if the final answer is correct. Return your response within <ACCURACY> </ACCURACY> tags. e.g.<ACCURACY> 0 </ACCURACY> or <ACCURACY> 1 </ACCURACY>"
-        system_prompt = Variable("You will analyze an email for a spam detection task.  You must answer EXACTLY these three questions in order, no more and no less: QUESTION_1: [INSERT FIRST QUESTION HERE] ANSWER_1: [Your analysis] QUESTION_2:[INSERT SECOND QUESTION HERE] ANSWER_2: [Your analysis] QUESTION_3: [INSERT THIRD QUESTION HERE] ANSWER_3: [Your analysis] FINAL_ANSWER: [0/1] Do not deviate from this exact format. Do not add additional questions or explanations.", requires_grad=False, role_description="system prompt for the evaluation")
-
-        # Should we do train/test like this?
-        train_set = SPAM_DSPy3(split="train", *args, **kwargs)
-        val_set = SPAM_DSPy3(split="val", *args, **kwargs)
-        test_set = SPAM_DSPy3(split="test", *args, **kwargs)
+        
+        train_set = SPAM_DSPy3(split="train", seed=seed, *args, **kwargs)
+        val_set = SPAM_DSPy3(split="val", seed=seed, *args, **kwargs)
+        test_set = SPAM_DSPy3(split="test", seed=seed, *args, **kwargs)
+        
+        # Also create the FULL test set
+        full_test_set = SPAM_DSPy3_FullTest(split="test", seed=seed, *args, **kwargs)
+        
         role_descriptions = [
             "Question for the task",
             "Ground truth answer",
@@ -169,7 +169,23 @@ def load_task(task_name: str, evaluation_api: EngineLM, *args, **kwargs) -> Tupl
         ]
         fn_purpose = "The runtime of string-based function that checks if the prediction is correct."
         eval_fn = StringBasedFunction(string_based_equality_fn, function_purpose=fn_purpose)
+        
+        # Return 5 items: train, val, test_balanced, test_full, eval_fn
+        return train_set, val_set, test_set, full_test_set, eval_fn
+
+    elif task_name == "SPAM_FULL_DATASET":
+        from textgrad.tasks.spam import SPAM_FULL_DATASET
+        from .big_bench_hard import string_based_equality_fn
+        from textgrad.autograd.string_based_ops import StringBasedFunction
+
+        train_set = SPAM_FULL_DATASET(split="train", seed=seed, *args, **kwargs)
+        val_set   = SPAM_FULL_DATASET(split="val",   seed=seed, *args, **kwargs)
+        test_set  = SPAM_FULL_DATASET(split="test",  seed=seed, *args, **kwargs)
+
+        fn_purpose = "The runtime of string-based function that checks if the prediction is correct."
+        eval_fn = StringBasedFunction(string_based_equality_fn, function_purpose=fn_purpose)
         return train_set, val_set, test_set, eval_fn
+
     
     elif task_name == "FRUITVEG":
         from textgrad.tasks.fruitveg import FRUITVEG, FRUITVEG_DSPy
@@ -177,9 +193,9 @@ def load_task(task_name: str, evaluation_api: EngineLM, *args, **kwargs) -> Tupl
         from textgrad.autograd.string_based_ops import StringBasedFunction
         
         # Use the DSPy version for balanced data
-        train_set = FRUITVEG_DSPy(split="train", *args, **kwargs)
-        val_set = FRUITVEG_DSPy(split="val", *args, **kwargs)
-        test_set = FRUITVEG_DSPy(split="test", *args, **kwargs)
+        train_set = FRUITVEG_DSPy(split="train", seed=seed, *args, **kwargs)
+        val_set = FRUITVEG_DSPy(split="val", seed=seed, *args, **kwargs)
+        test_set = FRUITVEG_DSPy(split="test", seed=seed, *args, **kwargs)
         
         role_descriptions = [
             "Text description to classify",
@@ -200,20 +216,130 @@ def load_task(task_name: str, evaluation_api: EngineLM, *args, **kwargs) -> Tupl
         use_balanced = bool(kwargs.pop("balanced", False))
 
         if use_balanced:
-            train_set = JAILBREAK_Classification_DSPy_Balanced(split="train", *args, **kwargs)
-            val_set   = JAILBREAK_Classification_DSPy_Balanced(split="val",   *args, **kwargs)
-            test_set  = JAILBREAK_Classification_DSPy_Balanced(split="test",  *args, **kwargs)
+            train_set = JAILBREAK_Classification_DSPy_Balanced(split="train", seed=seed, *args, **kwargs)
+            val_set   = JAILBREAK_Classification_DSPy_Balanced(split="val", seed=seed, *args, **kwargs)
+            test_set  = JAILBREAK_Classification_DSPy_Balanced(split="test", seed=seed, *args, **kwargs)
         else:
-            train_set = JAILBREAK_Classification_DSPy(split="train", *args, **kwargs)
-            val_set   = JAILBREAK_Classification_DSPy(split="val",   *args, **kwargs)
-            test_set  = JAILBREAK_Classification_DSPy(split="test",  *args, **kwargs)
+            train_set = JAILBREAK_Classification_DSPy(split="train", seed=seed, *args, **kwargs)
+            val_set   = JAILBREAK_Classification_DSPy(split="val", seed=seed, *args, **kwargs)
+            test_set  = JAILBREAK_Classification_DSPy(split="test", seed=seed, *args, **kwargs)
 
         # Same simple equality check you use elsewhere
         fn_purpose = "The runtime of string-based function that checks if the prediction is correct."
         eval_fn = StringBasedFunction(string_based_equality_fn, function_purpose=fn_purpose)
 
         return train_set, val_set, test_set, eval_fn
+    
+    elif task_name == "BANKCHURN":
+        from textgrad.tasks.bankchurn import BANKCHURN_DSPy, BANKCHURN_DSPy_FullTest
+        from .big_bench_hard import string_based_equality_fn
+        from textgrad.autograd.string_based_ops import StringBasedFunction
+        
+        train_set = BANKCHURN_DSPy(split="train", seed=seed, *args, **kwargs)
+        val_set = BANKCHURN_DSPy(split="val", seed=seed, *args, **kwargs)
+        test_set = BANKCHURN_DSPy(split="test", seed=seed, *args, **kwargs)
+        
+        # Also create the FULL test set
+        full_test_set = BANKCHURN_DSPy_FullTest(split="test", seed=seed, *args, **kwargs)
+        
+        role_descriptions = [
+            "Customer profile for churn prediction",
+            "Ground truth answer (0 for no churn, 1 for churn)",
+            "Prediction from the language model"
+        ]
+        
+        fn_purpose = "The runtime of string-based function that checks if the prediction is correct."
+        eval_fn = StringBasedFunction(string_based_equality_fn, function_purpose=fn_purpose)
+        
+        # Return 5 items: train, val, test_balanced, test_full, eval_fn
+        return train_set, val_set, test_set, full_test_set, eval_fn
+    
+    elif task_name == "BANKCHURN_IMBALANCED":
+        from textgrad.tasks.bankchurn import BANKCHURN_DSPy_Imbalanced
+        from .big_bench_hard import string_based_equality_fn
+        from textgrad.autograd.string_based_ops import StringBasedFunction
+        
+        train_set = BANKCHURN_DSPy_Imbalanced(split="train", seed=seed, *args, **kwargs)
+        val_set = BANKCHURN_DSPy_Imbalanced(split="val", seed=seed, *args, **kwargs)
+        test_set = BANKCHURN_DSPy_Imbalanced(split="test", seed=seed, *args, **kwargs)
+        
+        role_descriptions = [
+            "Customer profile for churn prediction",
+            "Ground truth answer (0 for no churn, 1 for churn)",
+            "Prediction from the language model"
+        ]
+        
+        fn_purpose = "The runtime of string-based function that checks if the prediction is correct."
+        eval_fn = StringBasedFunction(string_based_equality_fn, function_purpose=fn_purpose)
+        
+        # Return 4 items: train, val, test, eval_fn (no separate full_test since test is already full)
+        return train_set, val_set, test_set, eval_fn
+    
+    elif task_name == "BANKCHURN_FULL":
+        from textgrad.tasks.bankchurn import BANKCHURN_DSPy_Full
+        from .big_bench_hard import string_based_equality_fn
+        from textgrad.autograd.string_based_ops import StringBasedFunction
+        
+        train_set = BANKCHURN_DSPy_Full(split="train", seed=seed, *args, **kwargs)
+        val_set = BANKCHURN_DSPy_Full(split="val", seed=seed, *args, **kwargs)
+        test_set = BANKCHURN_DSPy_Full(split="test", seed=seed, *args, **kwargs)
+        
+        role_descriptions = [
+            "Customer profile for churn prediction",
+            "Ground truth answer (0 for no churn, 1 for churn)",
+            "Prediction from the language model"
+        ]
+        
+        fn_purpose = "The runtime of string-based function that checks if the prediction is correct."
+        eval_fn = StringBasedFunction(string_based_equality_fn, function_purpose=fn_purpose)
+        
+        # Return 4 items: train, val, test, eval_fn (no separate full_test since test is already full)
+        return train_set, val_set, test_set, eval_fn
 
+    elif task_name == "IMDBFULL":
+        from .big_bench_hard import string_based_equality_fn
+        from textgrad.autograd.string_based_ops import StringBasedFunction
+
+        # Use full dataset
+        train_set = IMDB_Classification_DSPy(split="train", seed=seed, *args, **kwargs)
+        val_set   = IMDB_Classification_DSPy(split="val", seed=seed, *args, **kwargs)
+        test_set  = IMDB_Classification_DSPy(split="test", seed=seed, *args, **kwargs)
+
+        role_descriptions = [
+            "Movie review text to classify",
+            "Ground truth answer (0 for negative, 1 for positive)",
+            "Prediction from the language model"
+        ]
+
+        fn_purpose = "The runtime of string-based function that checks if the prediction is correct."
+        eval_fn = StringBasedFunction(string_based_equality_fn, function_purpose=fn_purpose)
+
+        return train_set, val_set, test_set, eval_fn
+    
+    elif task_name == "IMDBBALANCED":
+        from textgrad.tasks.imdb import IMDB_Classification_DSPy_Balanced, IMDB_Classification_DSPy_Balanced_FullTest
+        from .big_bench_hard import string_based_equality_fn
+        from textgrad.autograd.string_based_ops import StringBasedFunction
+
+        # Use balanced dataset (300 positive + 300 negative per split)
+        train_set = IMDB_Classification_DSPy_Balanced(split="train", seed=seed, n_per_class=600, *args, **kwargs)
+        val_set   = IMDB_Classification_DSPy_Balanced(split="val", seed=seed, n_per_class=100, *args, **kwargs)
+        test_set  = IMDB_Classification_DSPy_Balanced(split="test", seed=seed, n_per_class=600, *args, **kwargs)
+        
+        # Also create the FULL test set
+        full_test_set = IMDB_Classification_DSPy_Balanced_FullTest(split="test", seed=seed, n_per_class=300, *args, **kwargs)
+
+        role_descriptions = [
+            "Movie review text to classify",
+            "Ground truth answer (0 for negative, 1 for positive)",
+            "Prediction from the language model"
+        ]
+
+        fn_purpose = "The runtime of string-based function that checks if the prediction is correct."
+        eval_fn = StringBasedFunction(string_based_equality_fn, function_purpose=fn_purpose)
+
+        # Return 5 items: train, val, test_balanced, test_full, eval_fn
+        return train_set, val_set, test_set, full_test_set, eval_fn
         
     else:
         raise ValueError(f"Task {task_name} not found task_name.")
