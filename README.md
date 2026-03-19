@@ -17,7 +17,7 @@ ACT (Agentic Classification Tree) extends traditional decision tree methodology 
 - 🌳 **Interpretable**: Each decision node contains a human-readable natural language question
 - 🎯 **Optimized**: Questions are automatically refined via TextGrad to minimize impurity
 - 🔍 **Transparent**: Full decision paths from root to leaf are easily auditable
-- 🚀 **Effective**: Matches or exceeds CoT, DSPy, and TextGrad baselines across benchmarks
+- 🚀 **Effective**: Matches or exceeds CoT, DSPy and TextGrad baselines across benchmarks
 
 ### Example: Tuberculosis Diagnosis
 ```
@@ -38,14 +38,14 @@ The ACT model iteratively learns questions like these for each node:
 
 ## Demo Notebooks
 
-Interactive Jupyter notebooks are provided for each dataset used in the paper:
+Interactive Jupyter notebooks are provided for three dataset used in the paper:
 ```
 notebooks/act_demo_diagno.ipynb      # Tuberculosis diagnosis
 notebooks/act_demo_spam.ipynb        # Spam detection
 notebooks/act_demo_jailbreak.ipynb   # Jailbreak prompt detection
 ```
 
-Each notebook includes step-by-step data exploration, model training, evaluation, and tree visualization. See the [Setup](#setup) section below for environment and kernel instructions.
+Each notebook includes step-by-step data exploration, model training, evaluation and tree visualization. See the [Setup](#setup) section below for environment and kernel instructions.
 
 ---
 
@@ -53,7 +53,7 @@ Each notebook includes step-by-step data exploration, model training, evaluation
 ```
 ACT/
 │
-├── act_output/                  # Create this folder to store created tree (.pkl) and training metadata
+├── act_output/               # Create this folder to store created trees (.pkl) and training metadata
 ├── act_src/
 │   ├── act.py                # Main training and evaluation script
 │   ├── eval_act.py           # Evaluate a saved ACT model
@@ -64,6 +64,7 @@ ACT/
 │   └── act_helper.py         # Helper functions
 │
 ├── notebooks/                # Contains demo notebooks
+├── output/                   # Contains output from demo notebooks
 ├── textgrad/                 # TextGrad submodule/dependency
 │   ├── tasks/                # Data loading handled here, add new datasets/tasks here
 │
