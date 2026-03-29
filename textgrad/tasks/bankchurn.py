@@ -8,7 +8,7 @@ import json
 # Possible paths for .json file
 possible_paths = [
     # Add path to bankchurn dataset created from:
-    # /Users/timarni/Documents/ACT/textgrad/tasks/bankchurn_dataset_creation.ipynb
+    # /ACT/textgrad/tasks/bankchurn_dataset_creation.ipynb
 ]
 
 class BANKCHURN(Dataset):
